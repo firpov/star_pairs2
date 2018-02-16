@@ -14,7 +14,7 @@ with open('HISTORY.rst') as history_file:
 requirements = [
     'Click>=6.0',
     # TODO: Get version in telops machines
-    'matplotlib>=1.4.2',
+    'matplotlib>=1.4.2,<2.0',
     # TODO: Get version in telops machines
     'numpy>=1.9.1',
 ]
