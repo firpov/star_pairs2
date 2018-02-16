@@ -9,10 +9,6 @@ Star Pairs
 .. image:: https://img.shields.io/travis/mgomezjimenez/star_pairs.svg
         :target: https://travis-ci.org/mgomezjimenez/star_pairs
 
-.. image:: https://readthedocs.org/projects/star-pairs/badge/?version=latest
-        :target: https://star-pairs.readthedocs.io/en/latest/?badge=latest
-        :alt: Documentation Status
-
 
 
 
@@ -20,7 +16,6 @@ Star pairs picker for Gemini nightly calibration
 
 
 * Free software: BSD license
-* Documentation: https://star-pairs.readthedocs.io.
 
 
 Features
