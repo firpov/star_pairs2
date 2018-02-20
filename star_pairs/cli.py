@@ -15,6 +15,24 @@ import math
 import os
 import pkg_resources
 
+# _Defining constants:
+LONGITUDE = '-70d44m12.096s'  # WGS84
+LATITUDE = '-30d14m26.700s'   # WGS84
+
+#_Defining functions:
+def format_decimal(string):
+    "Change format, from a string 'HHhMMmSS.SSSs' to a float HH.H"
+    print(string,type(string))
+    if string[0] == '-':
+        string = float(string[0:3]) - float(string[4:6]) / 60. - float(string[7:12]) / 3600.
+    elif string[0] == '+':
+        string = float(string[1:3]) + float(string[4:6]) / 60. + float(string[7:12]) / 3600.
+    else:
+        string = float(string[0:2]) + float(string[3:5]) / 60. + float(string[6:11]) / 3600.
+    print string
+    return
+
+
 @click.command()
 def main(args=None):
     """Console script for star_pairs."""
@@ -23,15 +41,20 @@ def main(args=None):
         import epics
         LST_epics = epics.caget("tcs:LST")
     except ImportError:
-        LST_epics = "00:00:00.0"
+            LST_epics = "00:00:00.0"
 
     # _Defining location parameters (WGS84)
-    longitude = '-70d44m12.096s'  # Keep format with the sign
-    longitude = float(longitude[0:3]) - float(longitude[4:6]) / \
-        60. - float(longitude[7:12]) / 3600.  # Degrees
-    latitude = '-30d14m26.700s'
-    latitude = float(latitude[0:3]) - float(latitude[4:6]) / \
-        60. - float(latitude[7:12]) / 3600.  # Degrees
+    #longitude = float(LONGITUDE[0:3]) - float(LONGITUDE[4:6]) / \
+#        60. - float(LONGITUDE[7:12]) / 3600.  # Degrees
+#    latitude = float(LATITUDE[0:3]) - float(LATITUDE[4:6]) / \
+#        60. - float(LATITUDE[7:12]) / 3600.  # Degrees
+
+    longitude = format_decimal(LONGITUDE)
+    print(type(format_decimal(LONGITUDE)))
+
+    print(longitude, type(longitude))
+
+    quit()
 
     # _Defining local sidereal time (LST)
     LST = float(LST_epics[0:2]) + float(LST_epics[3:5]) / 60. + \
