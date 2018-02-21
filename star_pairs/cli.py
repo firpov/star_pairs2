@@ -15,65 +15,67 @@ import math
 import os
 import pkg_resources
 
-# _Defining constants:
-LONGITUDE = '-70d44m12.096s'  # WGS84
+# _Define constants:
 LATITUDE = '-30d14m26.700s'   # WGS84
 
-#_Defining functions:
-def format_decimal(string):
-    "Change format, from a string 'HHhMMmSS.SSSs' to a float HH.H"
-    print(string,type(string))
-    if string[0] == '-':
-        string = float(string[0:3]) - float(string[4:6]) / 60. - float(string[7:12]) / 3600.
-    elif string[0] == '+':
-        string = float(string[1:3]) + float(string[4:6]) / 60. + float(string[7:12]) / 3600.
-    else:
-        string = float(string[0:2]) + float(string[3:5]) / 60. + float(string[6:11]) / 3600.
-    print string
-    return
+# _Define lists:
+ID = []
+ID_P1P2 = []
+RA = []
+Dec = []
+Vmag_AcqCam = []
+Vmag_P1P2 = []
+Sep = []
+Pangle = []
 
+HA = []
+
+El = []
+Az = []
+
+r = []
+theta = []
+ID_f = []
+ID_P1P2_f = []
+Vmag_AcqCam_f = []
+Vmag_P1P2_f = []
+Sep_f = []
+Pangle_f = []
+size = []
+color_star = []
+alpha_star = []
+
+# _Define functions:
+def format_decimal(s):
+    "Format HH:MM:SS strings in decimal HH.H floats"
+    if len(s) == 14:  # For latitude and longitude
+        return float(s[0:3]) - float(s[4:6]) / 60. - float(s[7:12]) / 3600.
+    elif len(s) == 10:  # For LST
+        return float(s[0:2]) + float(s[3:5]) / 60. + float(s[6:10]) / 3600.
+    else:
+        print 'Wrong len(string), see format_decimal function'
 
 @click.command()
 def main(args=None):
     """Console script for star_pairs."""
 
+    # _Extract LST from computer, calculate latitude
     try:
         import epics
         LST_epics = epics.caget("tcs:LST")
     except ImportError:
             LST_epics = "00:00:00.0"
 
-    # _Defining location parameters (WGS84)
-    #longitude = float(LONGITUDE[0:3]) - float(LONGITUDE[4:6]) / \
-#        60. - float(LONGITUDE[7:12]) / 3600.  # Degrees
-#    latitude = float(LATITUDE[0:3]) - float(LATITUDE[4:6]) / \
-#        60. - float(LATITUDE[7:12]) / 3600.  # Degrees
+    LST = format_decimal(LST_epics)
 
-    longitude = format_decimal(LONGITUDE)
-    print(type(format_decimal(LONGITUDE)))
-
-    print(longitude, type(longitude))
-
-    quit()
-
-    # _Defining local sidereal time (LST)
-    LST = float(LST_epics[0:2]) + float(LST_epics[3:5]) / 60. + \
-        float(LST_epics[6:10]) / 3600.  # Hours
+    # _Format latitude
+    latitude = format_decimal(LATITUDE)
 
     # _Celestial objects in equatorial coordinates (J2000)
     # ___Read from file
     file = pkg_resources.resource_stream(__name__, "data/pairs.txt")
     lines = file.readlines()
     file.close()
-
-    ID = []
-    ID_P1P2 = []
-    RA = []
-    Dec = []
-    Vmag_AcqCam = []
-    Vmag_P1P2 = []
-    Sep = []
-    Pangle = []
 
     for i in range((len(lines) / 3) + 1):
         ID.append(lines[3 * i].split()[0])
@@ -93,16 +95,11 @@ def main(args=None):
             float(Dec[x][7:11]) / 3600.  # Degrees
 
     # ___Calculate HA
-    HA = []
-
     for a in range(len(RA)):
         HA.append((float(RA[a])))  # Hours (following calculi need HA in degrees)
         HA[a] = LST - HA[a]
 
     #__Calculating altazimuthal coordinates
-    El = []
-    Az = []
-
     for i in range(len(RA)):
         El.append(
             np.arcsin(
@@ -141,17 +138,8 @@ def main(args=None):
     #____Setting altazimuthal coordinates
     # In a polar plot, Zenith would be 0 degrees, so we have to revert the
     # elevation axis.
-    r = []
-    theta = []  # For converting azimuth axis to degrees
-    ID_f = []
-    ID_P1P2_f = []
-    Vmag_AcqCam_f = []
-    Vmag_P1P2_f = []
-    Sep_f = []
-    Pangle_f = []
-    size = []
-    color_star = []
-    alpha_star = []
+
+#    theta = []
 
     for i in range(len(RA)):
         if np.degrees(El[i]) > 30.:
