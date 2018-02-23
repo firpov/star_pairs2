@@ -19,22 +19,13 @@ import pkg_resources
 LATITUDE = '-30d14m26.700s'   # WGS84
 
 # _Define lists:
-ID = []
-ID_P1P2 = []
-RA = []
-Dec = []
-Vmag_AcqCam = []
-Vmag_P1P2 = []
-Sep = []
-Pangle = []
-
-HA = []
-
 El = []
 Az = []
 
+#HA = []
+
 r = []
-theta = []
+#theta = []
 ID_f = []
 ID_P1P2_f = []
 Vmag_AcqCam_f = []
@@ -48,58 +39,57 @@ alpha_star = []
 # _Define functions:
 def format_decimal(s):
     "Format HH:MM:SS strings in decimal HH.H floats"
-    if len(s) == 14:  # For latitude and longitude
+    if len(s) == 14:  # For latitude and longitude (degress)
         return float(s[0:3]) - float(s[4:6]) / 60. - float(s[7:12]) / 3600.
-    elif len(s) == 10:  # For LST
+    elif len(s) == 10:  # For LST (hours)
         return float(s[0:2]) + float(s[3:5]) / 60. + float(s[6:10]) / 3600.
     else:
         print 'Wrong len(string), see format_decimal function'
 
-@click.command()
-def main(args=None):
-    """Console script for star_pairs."""
+def format_Dec(s):
+    "Format from a string DD:MM:SS.S to DD.D float the Dec values from pairs.txt"
+    for x in range(len(s)):
+        s[x] = float(s[x][:3]) - float(s[x][4:6]) / 60. - \
+                float(s[x][7:11]) / 3600.
+    return s
 
-    # _Extract LST from computer, calculate latitude
-    try:
-        import epics
-        LST_epics = epics.caget("tcs:LST")
-    except ImportError:
-            LST_epics = "00:00:00.0"
+def format_RA(s):
+    "Format from a string HH:MM:SS.S to DD.D float the RA values from pairs.txt"
+    for x in range(len(s)):
+        s[x] = float(s[x][:2]) + float(s[x][3:5]) / 60. + \
+                float(s[x][6:11]) / 3600.
+    return s
 
-    LST = format_decimal(LST_epics)
+def fill_list(l):
+    "Introducing the file pairs.txt, with columns and lines, it creates lists and fill them with data"
+    ID = []
+    ID_P1P2 = []
+    RA = []
+    Dec = []
+    Vmag_AcqCam = []
+    Vmag_P1P2 = []
+    Sep = []
+    Pangle = []
+    for i in range((len(l) / 3) + 1):
+        ID.append(l[3 * i].split()[0])
+        ID_P1P2.append(l[3 * i + 1].split()[0])
+        RA.append(l[3 * i].split()[1])
+        Dec.append(l[3 * i].split()[2])
+        Vmag_AcqCam.append(l[3 * i].split()[3])
+        Vmag_P1P2.append(l[3 * i + 1].split()[3])
+        Sep.append(l[3 * i].split()[4])
+        Pangle.append(l[3 * i + 1].split()[4])
+    return ID, ID_P1P2, RA, Dec, Vmag_AcqCam, Vmag_P1P2, Sep, Pangle
 
-    # _Format latitude
-    latitude = format_decimal(LATITUDE)
-
-    # _Celestial objects in equatorial coordinates (J2000)
-    # ___Read from file
-    file = pkg_resources.resource_stream(__name__, "data/pairs.txt")
-    lines = file.readlines()
-    file.close()
-
-    for i in range((len(lines) / 3) + 1):
-        ID.append(lines[3 * i].split()[0])
-        ID_P1P2.append(lines[3 * i + 1].split()[0])
-        RA.append(lines[3 * i].split()[1])
-        Dec.append(lines[3 * i].split()[2])
-        Vmag_AcqCam.append(lines[3 * i].split()[3])
-        Vmag_P1P2.append(lines[3 * i + 1].split()[3])
-        Sep.append(lines[3 * i].split()[4])
-        Pangle.append(lines[3 * i + 1].split()[4])
-
-    # ___Change the format of RA and Dec so it could be used in the code tuning
-    for x in range(len(RA)):
-        RA[x] = float(RA[x][:2]) + float(RA[x][3:5]) / 60. + \
-            float(RA[x][6:11]) / 3600.  # Hours
-        Dec[x] = float(Dec[x][:3]) - float(Dec[x][4:6]) / 60. - \
-            float(Dec[x][7:11]) / 3600.  # Degrees
-
-    # ___Calculate HA
+def cal_HA(LST, RA):
+    "Calculate HA introducing RA and LST"
+    HA = []
     for a in range(len(RA)):
-        HA.append((float(RA[a])))  # Hours (following calculi need HA in degrees)
-        HA[a] = LST - HA[a]
+        HA.append(LST - RA[a])
+    return HA
 
-    #__Calculating altazimuthal coordinates
+def cal_altaz(RA, Dec, HA, latitude):
+    "Convert from equatorial to altazimuthal coordinares (radians)"
     for i in range(len(RA)):
         El.append(
             np.arcsin(
@@ -133,13 +123,49 @@ def main(args=None):
                         np.radians(latitude)))))  # Radians
         if np.sin(np.radians(HA[i] * 15.)) > 0.:
             Az[i] = 2. * np.pi - Az[i]
+    return Az, El
+
+@click.command()
+def main(args=None):
+    """Console script for star_pairs."""
+
+    # _Extract LST from computer, format LST
+    try:
+        import epics
+        LST_epics = epics.caget("tcs:LST")
+    except ImportError:
+            LST_epics = "00:00:00.0"
+
+    LST = format_decimal(LST_epics)
+
+    # _Format latitude
+    latitude = format_decimal(LATITUDE)
+
+    # _Pairs from equatorial coordinates (J2000) to altazimuthal
+    # ___Read from file
+    file = pkg_resources.resource_stream(__name__, "data/pairs.txt")
+    lines = file.readlines()
+    file.close()
+
+    # ___Fill lists with data from pairs.txt
+    ID, ID_P1P2, RA, Dec, Vmag_AcqCam, Vmag_P1P2, Sep, Pangle = fill_list(lines)
+
+    # ___Format RA and Dec: so it could be used in the code tuning
+    RA = format_RA(RA)
+    Dec = format_Dec(Dec)
+
+    # ___Calculate HA
+    HA = cal_HA(LST, RA)
+
+    #__Calculate altazimuthal coordinates
+    Az, El = cal_altaz(RA, Dec, HA, latitude)
 
     #__Plotting in polar coordiantes
     #____Setting altazimuthal coordinates
     # In a polar plot, Zenith would be 0 degrees, so we have to revert the
     # elevation axis.
 
-#    theta = []
+    theta = []
 
     for i in range(len(RA)):
         if np.degrees(El[i]) > 30.:
