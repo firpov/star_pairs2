@@ -18,24 +18,6 @@ import pkg_resources
 # _Define constants:
 LATITUDE = '-30d14m26.700s'   # WGS84
 
-# _Define lists:
-El = []
-Az = []
-
-#HA = []
-
-r = []
-#theta = []
-ID_f = []
-ID_P1P2_f = []
-Vmag_AcqCam_f = []
-Vmag_P1P2_f = []
-Sep_f = []
-Pangle_f = []
-size = []
-color_star = []
-alpha_star = []
-
 # _Define functions:
 def format_decimal(s):
     "Format HH:MM:SS strings in decimal HH.H floats"
@@ -90,6 +72,8 @@ def cal_HA(LST, RA):
 
 def cal_altaz(RA, Dec, HA, latitude):
     "Convert from equatorial to altazimuthal coordinares (radians)"
+    El = []
+    Az = []
     for i in range(len(RA)):
         El.append(
             np.arcsin(
@@ -124,6 +108,33 @@ def cal_altaz(RA, Dec, HA, latitude):
         if np.sin(np.radians(HA[i] * 15.)) > 0.:
             Az[i] = 2. * np.pi - Az[i]
     return Az, El
+
+def set_altaz(El, Az, ID, ID_P1P2, Vmag_AcqCam, Vmag_P1P2, Sep, Pangle):
+    "Set format for displaying altazimuthal coordinates. Besides, it only takes"
+    "pairs which are higher than 30 degrees in elevation. Plus it has to invert"
+    "the elevation to be displayed right (issues about polar projection?)"
+    r = []
+    theta = []
+    ID_f = []
+    ID_P1P2_f = []
+    Vmag_AcqCam_f = []
+    Vmag_P1P2_f = []
+    Sep_f = []
+    Pangle_f = []
+    size = []
+    color_star = []
+    alpha_star = []
+    for i in range(len(El)):
+        if np.degrees(El[i]) > 30.:
+            r.append(90.0 - np.degrees(El[i]))
+            theta.append(Az[i])
+            ID_f.append(ID[i])
+            ID_P1P2_f.append(ID_P1P2[i])
+            Vmag_AcqCam_f.append(Vmag_AcqCam[i])
+            Vmag_P1P2_f.append(Vmag_P1P2[i])
+            Sep_f.append(Sep[i])
+            Pangle_f.append(Pangle[i])
+    return r, theta, ID_f, ID_P1P2_f, Vmag_AcqCam_f, Vmag_P1P2_f, Sep_f, Pangle_f
 
 @click.command()
 def main(args=None):
@@ -161,34 +172,9 @@ def main(args=None):
     Az, El = cal_altaz(RA, Dec, HA, latitude)
 
     #__Plotting in polar coordiantes
-    #____Setting altazimuthal coordinates
-    # In a polar plot, Zenith would be 0 degrees, so we have to revert the
-    # elevation axis.
+    #____Format altazimuthal coordinates
+    r, theta, ID_f, ID_P1P2_f, Vmag_AcqCam_f, Vmag_P1P2_f, Sep_f, Pangle_f = set_altaz(El, Az, ID, ID_P1P2, Vmag_AcqCam, Vmag_P1P2, Sep, Pangle)
 
-    theta = []
-
-    for i in range(len(RA)):
-        if np.degrees(El[i]) > 30.:
-            r.append(90.0 - np.degrees(El[i]))
-            theta.append(Az[i])
-            ID_f.append(ID[i])
-            ID_P1P2_f.append(ID_P1P2[i])
-            Vmag_AcqCam_f.append(Vmag_AcqCam[i])
-            Vmag_P1P2_f.append(Vmag_P1P2[i])
-            Sep_f.append(Sep[i])
-            Pangle_f.append(Pangle[i])
-            if (float(Vmag_AcqCam[i]) > 3. and float(Vmag_AcqCam[i]) < 5.5):
-                size.append(22)
-                color_star.append((1, 1, 0))
-                alpha_star.append(1)
-            elif (float(Vmag_AcqCam[i]) > 5.5 and float(Vmag_AcqCam[i]) < 7.):
-                size.append(18)
-                color_star.append((0.95, 0.95, 0))
-                alpha_star.append(0.95)
-            else:
-                size.append(14)
-                color_star.append((0.9, 0.9, 0))
-                alpha_star.append(0.9)
     #____Plot, in a polar projection, the coordinates
     fig = plt.figure(figsize=(11, 11))
     fig.set_facecolor((0.8, 0.8, 0.8))
