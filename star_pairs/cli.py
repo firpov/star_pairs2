@@ -266,6 +266,31 @@ def main(args=None):
         print ' Separation (arcmin): ', Sep_f[ind][0:4], 'PA (degrees):', Pangle_f[ind][0:5]
         print '__________________________________________________________________________'
 
+        # Ask the user if the star is double
+        answer = input('Is this star a double? (Y/N): ')
+
+        if answer.lower() == 'Y':
+            # Ask the user if they want to delete it
+            delete = input('Do you want to delete it from the list? (Y/N): ')
+
+            if delete.lower() == 'Y':
+                # Delete the star from pairs.txt
+                with open('pairs.txt', 'r') as file:
+                    lines = file.readlines()
+
+                with open('pairs.txt', 'w') as file:
+                    for line in lines:
+                        if ID_f[ind] not in line:
+                            file.write(line)
+
+                print('Star', ID_f[ind], 'deleted from the list.')
+            else:
+                print('Star', ID_f[ind], 'not deleted.')
+        else:
+            print('Star is not a double.')
+
+        # Close the popup window
+        plt.close()
 
     fig.canvas.mpl_connect('pick_event', onpick)
     fig.canvas.set_window_title('tuning.py')
